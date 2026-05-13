@@ -1,14 +1,18 @@
-name: Scrape ATS
+name: Scrape LinkedIn
 
 on:
   schedule:
-    # Every 4 hours — ATS data is structured + cheap to fetch
-    - cron: '0 */4 * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
-  scrape-ats:
+  scrape-linkedin:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [0, 1, 2, 3, 4, 5, 6, 7]
+
     steps:
       - name: Checkout private repo
         uses: actions/checkout@v4
@@ -16,15 +20,18 @@ jobs:
           repository: arjun-vegeta/jobsearch-aggregator
           token: ${{ secrets.PAT_TOKEN }}
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Run ATS scrape
+      - name: Run LinkedIn scraper (batch ${{ matrix.batch }})
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npm run scrape:ats
+        run: npm run scrape:linkedin -- --batch=${{ matrix.batch }}
+     
